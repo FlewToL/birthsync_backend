@@ -178,3 +178,26 @@ class ProfileRead(ContactRead):
     additional_notes: list[NoteRead] = []
     widgets: list[WidgetRead] = []
     reminders: list[ReminderRead] = []
+
+
+class GiftRecommendationRequest(FrontendModel):
+    categories: list[str] = Field(min_length=1, max_length=12)
+    notes: str | None = None
+    save_as_widgets: bool = False
+
+
+class GiftRecommendationItemRead(FrontendModel):
+    id: int
+    title: str
+    description: str | None = None
+    created_at: datetime
+
+
+class GiftRecommendationSessionRead(FrontendModel):
+    id: int
+    contact_id: UUID
+    provider: str
+    model_name: str | None = None
+    raw_response: str
+    items: list[GiftRecommendationItemRead]
+    created_at: datetime

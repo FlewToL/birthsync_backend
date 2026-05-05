@@ -80,6 +80,9 @@ POST   /api/contacts/{contactId}/widgets
 PATCH  /api/contacts/{contactId}/widgets/{widgetId}
 DELETE /api/contacts/{contactId}/widgets/{widgetId}
 
+GET    /api/contacts/{contactId}/recommendations
+POST   /api/contacts/{contactId}/recommendations
+
 GET    /api/reminders
 POST   /api/reminders
 PATCH  /api/reminders/{reminderId}
@@ -90,6 +93,27 @@ Example:
 
 ```bash
 curl -H "X-Telegram-Id: 435918797" http://127.0.0.1:8000/api/auth/me
+```
+
+Gift recommendations are generated through GigaChat and saved in PostgreSQL:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/contacts/{contactId}/recommendations" \
+  -H "Content-Type: application/json" \
+  -H "X-Telegram-Id: 435918797" \
+  -d '{
+    "categories": ["music", "concerts", "home comfort"],
+    "notes": "Likes practical gifts",
+    "saveAsWidgets": false
+  }'
+```
+
+Required GigaChat environment variables:
+
+```env
+CREDENTIALS=your_gigachat_credentials
+GIGACHAT_MODEL=GigaChat-Pro
+GIGACHAT_VERIFY_SSL_CERTS=false
 ```
 
 ### Without API Container
@@ -142,7 +166,8 @@ Open API docs at `http://127.0.0.1:8000/docs`.
 2. Copy the project to the server.
 3. Create `.env` from `.env.example`.
 4. Use strong database credentials in `.env`.
-5. Start services:
+5. Add `CREDENTIALS` for GigaChat recommendations.
+6. Start services:
 
 ```bash
 docker compose up -d --build

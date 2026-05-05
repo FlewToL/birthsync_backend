@@ -5,6 +5,11 @@ from fastapi import APIRouter, Header, HTTPException, Query, status
 
 from app import frontend_repositories as repositories
 from app import frontend_schemas as schemas
+from app.services.gift_recommendations import (
+    GiftGenerationError,
+    UnsafeGiftCategoriesError,
+    generate_gifts,
+)
 
 router = APIRouter(prefix="/api", tags=["frontend-api"])
 
@@ -207,6 +212,65 @@ async def delete_widget(
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Widget not found")
     return {"success": True}
+
+
+@router.post(
+    "/contacts/{contact_id}/recommendations",
+    response_model=schemas.GiftRecommendationSessionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_gift_recommendations(
+    contact_id: UUID,
+    payload: schemas.GiftRecommendationRequest,
+    telegram_id: Annotated[int, Header(alias="X-Telegram-Id")],
+):
+    await repositories.get_or_create_user(telegram_id)
+    context = await repositories.get_contact_recommendation_context(telegram_id, contact_id)
+    if context is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+
+    notes = "\n".join(part for part in [context["notes"], payload.notes] if part)
+    try:
+        result = await generate_gifts(
+            name=context["name"],
+            birth_date=context["birth_date"].isoformat() if context["birth_date"] else None,
+            categories=payload.categories,
+            notes=notes or None,
+        )
+    except UnsafeGiftCategoriesError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Categories look unsafe or empty",
+        ) from exc
+    except GiftGenerationError as exc:
+        status_code = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if "credentials" in str(exc).lower()
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+
+    saved = await repositories.save_gift_recommendation(
+        telegram_id=telegram_id,
+        contact_public_id=contact_id,
+        categories=payload.categories,
+        result=result,
+        save_as_widgets=payload.save_as_widgets,
+    )
+    if saved is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+    return saved
+
+
+@router.get(
+    "/contacts/{contact_id}/recommendations",
+    response_model=list[schemas.GiftRecommendationSessionRead],
+)
+async def list_gift_recommendations(
+    contact_id: UUID,
+    telegram_id: Annotated[int, Header(alias="X-Telegram-Id")],
+):
+    return await repositories.list_gift_recommendations(telegram_id, contact_id)
 
 
 @router.post("/reminders", response_model=schemas.ReminderRead, status_code=status.HTTP_201_CREATED)

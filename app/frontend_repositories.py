@@ -7,6 +7,7 @@ import asyncpg
 
 from app import frontend_schemas as schemas
 from app.db.context import db_connection, db_transaction
+from app.services.gift_recommendations import GiftGenerationResult
 
 
 def _decode_links(value: Any) -> list[dict]:
@@ -90,6 +91,27 @@ def _reminder_row(row: asyncpg.Record) -> dict:
         "completed": row["completed"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
+    }
+
+
+def _recommendation_item_row(row: asyncpg.Record) -> dict:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "description": row["description"],
+        "created_at": row["created_at"],
+    }
+
+
+def _recommendation_session_row(row: asyncpg.Record, items: list[dict]) -> dict:
+    return {
+        "id": row["id"],
+        "contact_id": row["contact_public_id"],
+        "provider": row["provider"],
+        "model_name": row["model_name"],
+        "raw_response": row["raw_response"] or "",
+        "items": items,
+        "created_at": row["created_at"],
     }
 
 
@@ -551,3 +573,121 @@ async def delete_reminder(telegram_id: int, reminder_id: UUID) -> bool:
     async with db_transaction() as conn:
         result = await conn.execute(query, telegram_id, reminder_id)
     return result == "DELETE 1"
+
+
+async def get_contact_recommendation_context(
+    telegram_id: int,
+    contact_public_id: UUID,
+) -> dict | None:
+    query = """
+        SELECT c.id, c.public_id, c.display_name, c.birth_date, c.common_notes,
+            COALESCE(string_agg(n.title || ': ' || n.content, E'\n'), '') AS notes
+        FROM contacts c
+        JOIN users owner ON owner.id = c.owner_user_id
+        LEFT JOIN contact_notes n ON n.contact_id = c.id
+        WHERE owner.telegram_id = $1 AND c.public_id = $2 AND c.is_archived = false
+        GROUP BY c.id
+    """
+    async with db_connection() as conn:
+        row = await conn.fetchrow(query, telegram_id, contact_public_id)
+    if row is None:
+        return None
+    notes = "\n".join(part for part in [row["common_notes"], row["notes"]] if part)
+    return {
+        "internal_id": row["id"],
+        "public_id": row["public_id"],
+        "name": row["display_name"],
+        "birth_date": row["birth_date"],
+        "notes": notes or None,
+    }
+
+
+async def save_gift_recommendation(
+    telegram_id: int,
+    contact_public_id: UUID,
+    categories: list[str],
+    result: GiftGenerationResult,
+    save_as_widgets: bool = False,
+) -> dict | None:
+    async with db_transaction() as conn:
+        owner_user_id = await _get_user_internal_id(conn, telegram_id)
+        contact_id = await _get_contact_internal_id(conn, owner_user_id, contact_public_id)
+        if contact_id is None:
+            return None
+
+        session_row = await conn.fetchrow(
+            """
+            INSERT INTO recommendation_sessions (
+                user_id, contact_id, provider, model_name, prompt_context, raw_response, status
+            )
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, 'completed')
+            RETURNING id, $7::uuid AS contact_public_id, provider, model_name,
+                raw_response, created_at
+            """,
+            owner_user_id,
+            contact_id,
+            result.provider,
+            result.model_name,
+            json.dumps({"categories": categories}, ensure_ascii=False),
+            result.raw_text,
+            contact_public_id,
+        )
+
+        item_rows = []
+        for item in result.items:
+            item_row = await conn.fetchrow(
+                """
+                INSERT INTO recommendation_items (session_id, title, description)
+                VALUES ($1, $2, $3)
+                RETURNING id, title, description, created_at
+                """,
+                session_row["id"],
+                item.title,
+                item.description,
+            )
+            item_rows.append(_recommendation_item_row(item_row))
+            if save_as_widgets:
+                await conn.execute(
+                    """
+                    INSERT INTO contact_widgets (contact_id, title, description, accent)
+                    VALUES ($1, $2, $3, 'gray')
+                    """,
+                    contact_id,
+                    item.title,
+                    item.description,
+                )
+
+    return _recommendation_session_row(session_row, item_rows)
+
+
+async def list_gift_recommendations(
+    telegram_id: int,
+    contact_public_id: UUID,
+) -> list[dict]:
+    query = """
+        SELECT s.id, c.public_id AS contact_public_id, s.provider, s.model_name,
+            s.raw_response, s.created_at
+        FROM recommendation_sessions s
+        JOIN users owner ON owner.id = s.user_id
+        JOIN contacts c ON c.id = s.contact_id
+        WHERE owner.telegram_id = $1 AND c.public_id = $2
+        ORDER BY s.created_at DESC
+    """
+    item_query = """
+        SELECT id, title, description, created_at
+        FROM recommendation_items
+        WHERE session_id = $1
+        ORDER BY id
+    """
+    async with db_connection() as conn:
+        session_rows = await conn.fetch(query, telegram_id, contact_public_id)
+        result = []
+        for session_row in session_rows:
+            item_rows = await conn.fetch(item_query, session_row["id"])
+            result.append(
+                _recommendation_session_row(
+                    session_row,
+                    [_recommendation_item_row(row) for row in item_rows],
+                )
+            )
+    return result

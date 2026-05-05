@@ -47,7 +47,13 @@ class CacheSettings(EnvBaseSettings):
     redis_db: int = 3
 
 
-class Settings(AppSettings, DBSettings, CacheSettings):
+class GigaChatSettings(EnvBaseSettings):
+    credentials: SecretStr | None = None
+    gigachat_model: str = "GigaChat-Pro"
+    gigachat_verify_ssl_certs: bool = False
+
+
+class Settings(AppSettings, DBSettings, CacheSettings, GigaChatSettings):
     debug: bool = False
 
 

@@ -122,13 +122,23 @@ CREATE TABLE IF NOT EXISTS recommendation_sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     wishlist_id BIGINT REFERENCES wishlists(id) ON DELETE SET NULL,
+    contact_id BIGINT REFERENCES contacts(id) ON DELETE SET NULL,
     provider TEXT NOT NULL,
     model_name TEXT,
     prompt_context JSONB NOT NULL DEFAULT '{}'::jsonb,
+    raw_response TEXT,
+    status TEXT NOT NULL DEFAULT 'completed',
+    error_message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE recommendation_sessions ADD COLUMN IF NOT EXISTS contact_id BIGINT REFERENCES contacts(id) ON DELETE SET NULL;
+ALTER TABLE recommendation_sessions ADD COLUMN IF NOT EXISTS raw_response TEXT;
+ALTER TABLE recommendation_sessions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'completed';
+ALTER TABLE recommendation_sessions ADD COLUMN IF NOT EXISTS error_message TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_user_id ON recommendation_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_contact_id ON recommendation_sessions(contact_id);
 
 CREATE TABLE IF NOT EXISTS recommendation_items (
     id BIGSERIAL PRIMARY KEY,
