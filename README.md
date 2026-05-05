@@ -116,6 +116,15 @@ GIGACHAT_MODEL=GigaChat-Pro
 GIGACHAT_VERIFY_SSL_CERTS=false
 ```
 
+Logging is configured through environment variables:
+
+```env
+LOG_LEVEL=INFO
+LOG_JSON=false
+```
+
+Use `LOG_JSON=true` on the server if logs are collected by an external system.
+
 ### Without API Container
 
 1. Create `.env` from `.env.example` and set database variables:

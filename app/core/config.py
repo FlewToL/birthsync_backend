@@ -18,6 +18,8 @@ class EnvBaseSettings(BaseSettings):
 class AppSettings(EnvBaseSettings):
     app_name: str = "BirthSync API"
     app_env: str = "local"
+    log_level: str = "INFO"
+    log_json: bool = False
     db_apply_schema_on_startup: bool = False
     cors_origins: list[str] = [
         "http://localhost:3000",

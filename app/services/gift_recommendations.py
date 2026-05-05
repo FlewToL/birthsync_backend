@@ -2,6 +2,8 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
+from loguru import logger
+
 from app.core.config import settings
 
 
@@ -126,6 +128,11 @@ async def generate_gifts(
     notes: str | None = None,
 ) -> GiftGenerationResult:
     safe_categories = sanitize_categories(categories)
+    logger.bind(
+        provider="gigachat",
+        model=settings.gigachat_model,
+        categories_count=len(safe_categories),
+    ).info("Gift recommendation generation started")
 
     system_prompt = (
         "Ты - ассистент по генерации подарков. "
@@ -161,11 +168,23 @@ async def generate_gifts(
         last_raw_text = response.content
         items = parse_numbered_gifts(last_raw_text)
         if len(items) == 10 and not has_forbidden_output_text(items):
+            logger.bind(
+                provider="gigachat",
+                model=settings.gigachat_model,
+                attempt=attempt + 1,
+                items_count=len(items),
+            ).success("Gift recommendation generation completed")
             return GiftGenerationResult(
                 raw_text=last_raw_text,
                 items=items,
                 model_name=settings.gigachat_model,
             )
+        logger.bind(
+            provider="gigachat",
+            model=settings.gigachat_model,
+            attempt=attempt + 1,
+            items_count=len(items),
+        ).warning("Gift recommendation response rejected")
 
     if last_raw_text:
         raise GiftGenerationError("GigaChat returned an unsafe or unexpected gift list format")

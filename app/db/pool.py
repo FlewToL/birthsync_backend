@@ -26,6 +26,9 @@ async def init_db_pool() -> None:
         return
 
     try:
+        logger.info(
+            f"Creating database pool for {settings.db_user}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+        )
         db_pool = await asyncpg.create_pool(
             user=settings.db_user,
             password=settings.db_pass.get_secret_value(),
@@ -73,3 +76,4 @@ async def init_schema(pool: asyncpg.Pool | None = None) -> None:
     db = pool or await get_db_pool()
     async with db.acquire() as conn:
         await conn.execute(sql)
+    logger.success("Database schema initialized")
