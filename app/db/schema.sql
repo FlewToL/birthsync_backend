@@ -78,6 +78,29 @@ CREATE TABLE IF NOT EXISTS user_categories (
     UNIQUE (user_id, name)
 );
 
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    theme TEXT NOT NULL DEFAULT 'system',
+    swipe_enabled BOOLEAN NOT NULL DEFAULT true,
+    notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+    birthday_reminder_days INTEGER NOT NULL DEFAULT 1,
+    gift_recommendations_enabled BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT user_settings_theme_check CHECK (theme IN ('system', 'light', 'dark')),
+    CONSTRAINT user_settings_birthday_reminder_days_check CHECK (
+        birthday_reminder_days >= 0 AND birthday_reminder_days <= 365
+    )
+);
+
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS theme TEXT NOT NULL DEFAULT 'system';
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS swipe_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS birthday_reminder_days INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS gift_recommendations_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE TABLE IF NOT EXISTS wishlists (
     id BIGSERIAL PRIMARY KEY,
     owner_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -193,8 +216,20 @@ CREATE TABLE IF NOT EXISTS contact_widgets (
     accent TEXT NOT NULL DEFAULT 'gray',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT contact_widgets_accent_check CHECK (accent IN ('gray', 'blue', 'photo'))
+    CONSTRAINT contact_widgets_accent_check CHECK (
+        accent IN ('gray', 'red', 'blue', 'green', 'yellow', 'purple')
+    )
 );
+
+ALTER TABLE contact_widgets DROP CONSTRAINT IF EXISTS contact_widgets_accent_check;
+UPDATE contact_widgets
+SET accent = 'gray'
+WHERE accent IS NULL OR accent NOT IN ('gray', 'red', 'blue', 'green', 'yellow', 'purple');
+ALTER TABLE contact_widgets ALTER COLUMN accent SET DEFAULT 'gray';
+ALTER TABLE contact_widgets
+    ADD CONSTRAINT contact_widgets_accent_check CHECK (
+        accent IN ('gray', 'red', 'blue', 'green', 'yellow', 'purple')
+    );
 
 CREATE INDEX IF NOT EXISTS idx_contact_widgets_contact_id ON contact_widgets(contact_id);
 
@@ -206,9 +241,40 @@ CREATE TABLE IF NOT EXISTS reminders (
     reminder_date DATE NOT NULL,
     reminder_time TIME,
     completed BOOLEAN NOT NULL DEFAULT false,
+    repeat_rule TEXT,
+    early_reminder_minutes INTEGER,
+    early_reminder_repeat TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT reminders_repeat_rule_check CHECK (
+        repeat_rule IS NULL OR repeat_rule IN ('daily', 'weekly', 'monthly', 'yearly')
+    ),
+    CONSTRAINT reminders_early_reminder_minutes_check CHECK (
+        early_reminder_minutes IS NULL OR early_reminder_minutes BETWEEN 0 AND 525600
+    ),
+    CONSTRAINT reminders_early_reminder_repeat_check CHECK (
+        early_reminder_repeat IS NULL OR early_reminder_repeat IN ('once', 'daily')
+    )
 );
+
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS repeat_rule TEXT;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS early_reminder_minutes INTEGER;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS early_reminder_repeat TEXT;
+ALTER TABLE reminders DROP CONSTRAINT IF EXISTS reminders_repeat_rule_check;
+ALTER TABLE reminders DROP CONSTRAINT IF EXISTS reminders_early_reminder_minutes_check;
+ALTER TABLE reminders DROP CONSTRAINT IF EXISTS reminders_early_reminder_repeat_check;
+ALTER TABLE reminders
+    ADD CONSTRAINT reminders_repeat_rule_check CHECK (
+        repeat_rule IS NULL OR repeat_rule IN ('daily', 'weekly', 'monthly', 'yearly')
+    );
+ALTER TABLE reminders
+    ADD CONSTRAINT reminders_early_reminder_minutes_check CHECK (
+        early_reminder_minutes IS NULL OR early_reminder_minutes BETWEEN 0 AND 525600
+    );
+ALTER TABLE reminders
+    ADD CONSTRAINT reminders_early_reminder_repeat_check CHECK (
+        early_reminder_repeat IS NULL OR early_reminder_repeat IN ('once', 'daily')
+    );
 
 CREATE INDEX IF NOT EXISTS idx_reminders_contact_id ON reminders(contact_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders(reminder_date);

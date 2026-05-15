@@ -18,6 +18,8 @@ class EnvBaseSettings(BaseSettings):
 class AppSettings(EnvBaseSettings):
     app_name: str = "BirthSync API"
     app_env: str = "local"
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
     log_level: str = "INFO"
     log_json: bool = False
     db_apply_schema_on_startup: bool = False
@@ -55,7 +57,12 @@ class GigaChatSettings(EnvBaseSettings):
     gigachat_verify_ssl_certs: bool = False
 
 
-class Settings(AppSettings, DBSettings, CacheSettings, GigaChatSettings):
+class TelegramSettings(EnvBaseSettings):
+    telegram_bot_token: SecretStr | None = None
+    telegram_init_data_max_age_seconds: int = 86400
+
+
+class Settings(AppSettings, DBSettings, CacheSettings, GigaChatSettings, TelegramSettings):
     debug: bool = False
 
 

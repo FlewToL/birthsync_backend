@@ -44,7 +44,7 @@ For Ubuntu 20.04 with legacy Compose, use `docker-compose` instead of `docker co
 
 ## Frontend API
 
-Frontend routes use the `/api` prefix and camelCase JSON fields. Until Telegram initData verification is added, requests must pass the current Telegram user id in a header:
+Frontend routes use the `/api` prefix and camelCase JSON fields. Requests must pass the current Telegram user id in a header:
 
 ```http
 X-Telegram-Id: 435918797
@@ -58,11 +58,22 @@ X-First-Name: Roman
 X-Last-Name: Akulov
 ```
 
+Production Telegram Mini App requests may additionally pass signed launch data:
+
+```http
+X-Telegram-Init-Data: query_id=...&user=...&auth_date=...&hash=...
+```
+
+If `TELEGRAM_BOT_TOKEN` is configured, the backend verifies `X-Telegram-Init-Data` and rejects identity mismatches.
+
 Implemented endpoints:
 
 ```text
 GET    /api/auth/me
 PATCH  /api/auth/profile
+
+GET    /api/settings
+PATCH  /api/settings
 
 GET    /api/contacts
 POST   /api/contacts
@@ -124,6 +135,21 @@ LOG_JSON=false
 ```
 
 Use `LOG_JSON=true` on the server if logs are collected by an external system.
+
+Telegram initData verification is configured through:
+
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_INIT_DATA_MAX_AGE_SECONDS=86400
+```
+
+Frontend contract details:
+
+- `DELETE` endpoints return `204 No Content`.
+- Missing `X-Telegram-Id` returns `400 Bad Request`.
+- Widget accents are `gray`, `red`, `blue`, `green`, `yellow`, `purple`.
+- Reminders support `repeat`, `earlyReminderMinutes`, and `earlyReminderRepeat`.
+- User settings are persisted through `/api/settings`.
 
 ### Without API Container
 
