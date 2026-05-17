@@ -1,5 +1,6 @@
 asyncpg==0.31.0
 aiogram==3.28.2
+aiohttp-socks==0.11.0
 fastapi==0.124.0
 langchain-core==0.3.51
 langchain-gigachat==0.3.9

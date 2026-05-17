@@ -146,6 +146,8 @@ Telegram initData verification is configured through:
 
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_PROXY_URL=http://proxy_user:proxy_password@proxy_host:proxy_port
+TELEGRAM_BOT_REQUEST_TIMEOUT_SECONDS=30
 TELEGRAM_INIT_DATA_MAX_AGE_SECONDS=86400
 ```
 

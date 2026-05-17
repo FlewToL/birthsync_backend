@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import asyncpg
 from aiogram import Bot, Dispatcher, Router
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command, CommandStart
@@ -71,6 +72,7 @@ class TelegramBotService:
         self._stop_event = asyncio.Event()
         self._bot = Bot(
             token=token,
+            session=self._create_session(),
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         )
 
@@ -194,6 +196,20 @@ class TelegramBotService:
             return None
         token = settings.telegram_bot_token.get_secret_value().strip()
         return token or None
+
+    @staticmethod
+    def _create_session() -> AiohttpSession:
+        proxy_url = None
+        if settings.telegram_proxy_url is not None:
+            proxy_url = settings.telegram_proxy_url.get_secret_value().strip() or None
+
+        if proxy_url is not None:
+            logger.info("Telegram bot proxy is configured")
+
+        return AiohttpSession(
+            proxy=proxy_url,
+            timeout=settings.telegram_bot_request_timeout_seconds,
+        )
 
     @staticmethod
     def _get_timezone() -> ZoneInfo:

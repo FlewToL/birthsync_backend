@@ -66,6 +66,8 @@ class GigaChatSettings(EnvBaseSettings):
 
 class TelegramSettings(EnvBaseSettings):
     telegram_bot_token: SecretStr | None = None
+    telegram_proxy_url: SecretStr | None = None
+    telegram_bot_request_timeout_seconds: float = 30
     telegram_init_data_max_age_seconds: int = 86400
     telegram_bot_polling_enabled: bool = False
     telegram_reminders_enabled: bool = True
