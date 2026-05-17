@@ -436,7 +436,7 @@ async def patch_note(
     values = [data[field] for field in data if field in allowed]
     if not values:
         return None
-    assignments = [f"n.{field} = ${idx + 3}" for idx, field in enumerate(data) if field in allowed]
+    assignments = [f"{field} = ${idx + 3}" for idx, field in enumerate(data) if field in allowed]
     query = f"""
         UPDATE contact_notes n
         SET {", ".join(assignments)}, updated_at = now()
@@ -531,7 +531,7 @@ async def patch_widget(
     if not values:
         return None
     assignments = [
-        f"w.{field} = ${idx + 3}::jsonb" if field == "links" else f"w.{field} = ${idx + 3}"
+        f"{field} = ${idx + 3}::jsonb" if field == "links" else f"{field} = ${idx + 3}"
         for idx, field in enumerate(data)
         if field in allowed
     ]
@@ -653,7 +653,7 @@ async def patch_reminder(telegram_id: int, reminder_id: UUID, payload: schemas.R
     values = [data[field] for field in data if field in allowed]
     if not values:
         return None
-    assignments = [f"r.{field} = ${idx + 2}" for idx, field in enumerate(data) if field in allowed]
+    assignments = [f"{field} = ${idx + 2}" for idx, field in enumerate(data) if field in allowed]
     query = f"""
         UPDATE reminders r
         SET {", ".join(assignments)}, updated_at = now()
