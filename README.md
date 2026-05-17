@@ -132,9 +132,14 @@ Logging is configured through environment variables:
 ```env
 LOG_LEVEL=INFO
 LOG_JSON=false
+LOG_TO_FILE=true
+LOG_FILE_PATH=logs/app.log
+LOG_FILE_ROTATION=10 MB
+LOG_FILE_RETENTION=14 days
 ```
 
 Use `LOG_JSON=true` on the server if logs are collected by an external system.
+With Docker Compose, `./logs` is mounted into the API container and receives `app.log`.
 
 Telegram initData verification is configured through:
 

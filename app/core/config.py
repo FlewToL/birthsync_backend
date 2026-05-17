@@ -22,6 +22,10 @@ class AppSettings(EnvBaseSettings):
     api_port: int = 8000
     log_level: str = "INFO"
     log_json: bool = False
+    log_to_file: bool = True
+    log_file_path: str = "logs/app.log"
+    log_file_rotation: str = "10 MB"
+    log_file_retention: str = "14 days"
     db_apply_schema_on_startup: bool = False
     cors_origins: list[str] = [
         "http://localhost:3000",

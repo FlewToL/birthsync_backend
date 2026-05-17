@@ -32,6 +32,18 @@ def configure_logging() -> None:
         diagnose=settings.debug,
         enqueue=True,
     )
+    if settings.log_to_file:
+        logger.add(
+            settings.log_file_path,
+            level=settings.log_level.upper(),
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {extra} | {message}",
+            rotation=settings.log_file_rotation,
+            retention=settings.log_file_retention,
+            compression="zip",
+            backtrace=settings.debug,
+            diagnose=settings.debug,
+            enqueue=True,
+        )
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
     for logger_name in ("uvicorn", "uvicorn.error", "fastapi"):
