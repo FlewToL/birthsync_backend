@@ -134,12 +134,13 @@ LOG_LEVEL=INFO
 LOG_JSON=false
 LOG_TO_FILE=true
 LOG_FILE_PATH=logs/app.log
-LOG_FILE_ROTATION=10 MB
-LOG_FILE_RETENTION=14 days
+LOG_FILE_ROTATION=00:00
+LOG_FILE_RETENTION=365 days
 ```
 
 Use `LOG_JSON=true` on the server if logs are collected by an external system.
 With Docker Compose, `./logs` is mounted into the API container and receives `app.log`.
+By default, the log file rotates every day at `00:00` and rotated files are kept for `365 days`.
 
 Telegram initData verification is configured through:
 
