@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db.pool import close_db_pool, init_db_pool, init_schema
 from app.middleware.request_logging import log_requests
+from app.services.telegram_bot import telegram_bot_service
 
 
 configure_logging()
@@ -22,10 +23,12 @@ async def lifespan(app: FastAPI):
         logger.info("Applying database schema on startup")
         await init_schema()
         logger.info("Database schema applied")
+    await telegram_bot_service.start()
 
     yield
 
     logger.info("Shutting down application")
+    await telegram_bot_service.stop()
     await close_db_pool()
 
 

@@ -149,6 +149,20 @@ TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_INIT_DATA_MAX_AGE_SECONDS=86400
 ```
 
+The same `TELEGRAM_BOT_TOKEN` is used for Telegram reminder delivery through aiogram 3:
+
+```env
+TELEGRAM_BOT_POLLING_ENABLED=false
+TELEGRAM_REMINDERS_ENABLED=true
+TELEGRAM_REMINDER_POLL_INTERVAL_SECONDS=60
+TELEGRAM_REMINDER_LATE_GRACE_MINUTES=1440
+TELEGRAM_REMINDER_TIMEZONE=Europe/Moscow
+TELEGRAM_REMINDER_DEFAULT_TIME=09:00
+```
+
+When `TELEGRAM_BOT_POLLING_ENABLED=true`, the API process also starts bot polling for `/start`.
+Users must open the bot at least once before Telegram allows the backend to send them reminders.
+
 Frontend contract details:
 
 - `DELETE` endpoints return `204 No Content`.

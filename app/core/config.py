@@ -1,3 +1,5 @@
+from datetime import time
+
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -65,6 +67,12 @@ class GigaChatSettings(EnvBaseSettings):
 class TelegramSettings(EnvBaseSettings):
     telegram_bot_token: SecretStr | None = None
     telegram_init_data_max_age_seconds: int = 86400
+    telegram_bot_polling_enabled: bool = False
+    telegram_reminders_enabled: bool = True
+    telegram_reminder_poll_interval_seconds: int = 60
+    telegram_reminder_late_grace_minutes: int = 1440
+    telegram_reminder_timezone: str = "Europe/Moscow"
+    telegram_reminder_default_time: time = time(hour=9, minute=0)
 
 
 class Settings(AppSettings, DBSettings, CacheSettings, GigaChatSettings, TelegramSettings):

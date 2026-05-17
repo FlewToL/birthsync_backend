@@ -278,3 +278,29 @@ ALTER TABLE reminders
 
 CREATE INDEX IF NOT EXISTS idx_reminders_contact_id ON reminders(contact_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders(reminder_date);
+
+CREATE TABLE IF NOT EXISTS reminder_notifications (
+    id BIGSERIAL PRIMARY KEY,
+    reminder_id UUID NOT NULL REFERENCES reminders(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    contact_id BIGINT NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    notification_type TEXT NOT NULL,
+    notification_key TEXT NOT NULL,
+    occurrence_at TIMESTAMPTZ NOT NULL,
+    scheduled_at TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'processing',
+    error_message TEXT,
+    sent_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT reminder_notifications_type_check CHECK (
+        notification_type IN ('main', 'early')
+    ),
+    CONSTRAINT reminder_notifications_status_check CHECK (
+        status IN ('processing', 'sent', 'failed')
+    ),
+    UNIQUE (reminder_id, notification_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminder_notifications_user_id ON reminder_notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminder_notifications_scheduled_at ON reminder_notifications(scheduled_at);
