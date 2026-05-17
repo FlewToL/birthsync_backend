@@ -151,6 +151,18 @@ Frontend contract details:
 - Reminders support `repeat`, `earlyReminderMinutes`, and `earlyReminderRepeat`.
 - User settings are persisted through `/api/settings`.
 
+For frontend deployments, add their exact origins to `CORS_ORIGINS`:
+
+```env
+CORS_ORIGINS=["https://birthsync.ru","https://www.birthsync.ru","https://birthsync-app-git-backend-integration-falcion-io.vercel.app"]
+```
+
+For temporary Vercel preview builds, a regex can be used instead:
+
+```env
+CORS_ORIGIN_REGEX=^https://birthsync-app.*\.vercel\.app$
+```
+
 ### Without API Container
 
 1. Create `.env` from `.env.example` and set database variables:
