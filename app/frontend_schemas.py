@@ -92,6 +92,7 @@ class CurrentUserPatch(FrontendModel):
 
 class UserRead(FrontendModel):
     id: str
+    profile_id: UUID
     telegram_id: int
     telegram_handle: str | None = None
     first_name: str | None = None

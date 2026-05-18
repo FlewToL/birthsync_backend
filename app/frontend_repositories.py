@@ -21,6 +21,7 @@ def _decode_links(value: Any) -> list[dict]:
 def _user_row(row: asyncpg.Record) -> dict:
     return {
         "id": str(row["telegram_id"]),
+        "profile_id": row["public_id"],
         "telegram_id": row["telegram_id"],
         "telegram_handle": row["username"],
         "first_name": row["first_name"] or row["username"] or "User",
@@ -151,7 +152,7 @@ async def get_or_create_user(
             first_name = COALESCE(EXCLUDED.first_name, users.first_name),
             last_name = COALESCE(EXCLUDED.last_name, users.last_name),
             updated_at = now()
-        RETURNING id, telegram_id, username, first_name, last_name, birth_date,
+        RETURNING id, public_id, telegram_id, username, first_name, last_name, birth_date,
             phone, email, profile_image, common_notes, preferred_language,
             created_at, updated_at
     """
@@ -162,7 +163,7 @@ async def get_or_create_user(
 
 async def get_user_by_telegram_id(telegram_id: int) -> dict | None:
     query = """
-        SELECT id, telegram_id, username, first_name, last_name, birth_date,
+        SELECT id, public_id, telegram_id, username, first_name, last_name, birth_date,
             phone, email, profile_image, common_notes, preferred_language,
             created_at, updated_at
         FROM users
@@ -198,7 +199,7 @@ async def patch_user_profile(telegram_id: int, payload: schemas.CurrentUserPatch
         UPDATE users
         SET {", ".join(assignments)}, updated_at = now()
         WHERE telegram_id = ${len(values) + 1}
-        RETURNING id, telegram_id, username, first_name, last_name, birth_date,
+        RETURNING id, public_id, telegram_id, username, first_name, last_name, birth_date,
             phone, email, profile_image, common_notes, preferred_language,
             created_at, updated_at
     """

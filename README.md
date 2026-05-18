@@ -172,6 +172,7 @@ Frontend contract details:
 - Widget accents are `gray`, `red`, `blue`, `green`, `yellow`, `purple`.
 - Reminders support `repeat`, `earlyReminderMinutes`, and `earlyReminderRepeat`.
 - User settings are persisted through `/api/settings`.
+- `GET /api/auth/me` returns `profileId`, a stable UUID of the current mini-app user profile.
 
 For frontend deployments, add their exact origins to `CORS_ORIGINS`:
 
